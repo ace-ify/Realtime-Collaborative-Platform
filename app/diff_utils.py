@@ -21,7 +21,7 @@ def apply_diff_to_ytext(ytext: Y.Text, old_text: str, new_text: str, doc: Y.Doc)
                 idx += len(text)
             elif op == -1:
                 # -1 means DELETE: Delete characters at the current cursor
-                ytext.delete(idx, len(text))
+                del ytext[idx : idx + len(text)]
                 # Note: We do NOT increment idx, because deleting shifts the remaining text to the left
             elif op == 1:
                 # 1 means INSERT: Insert new text at the current cursor
