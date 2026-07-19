@@ -5,14 +5,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import asyncio
 import websockets
 import pycrdt as Y
-from app.database import SessionLocal
+from app.database import SessionLocal, engine, Base
 from app.models import DocumentUpdate, DocumentSnapshot
 
 WS_URL = "ws://127.0.0.1:8000/ws/doc_persist_test"
 
 async def test_persistence_flow():
     print("🚀 Starting Database Persistence & Snapshotting Test...")
-    
+    Base.metadata.create_all(bind=engine)
     # 0. Database cleanup for clean test run
     db = SessionLocal()
     db.query(DocumentUpdate).filter(DocumentUpdate.document_id == "doc_persist_test").delete()
