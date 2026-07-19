@@ -7,6 +7,13 @@ from pydantic import BaseModel
 from app.diff_utils import apply_diff_to_ytext
 from app.ai_editor import generate_llm_edit
 
+# Load Database models and engine
+from app.database import engine, Base
+import app.models as models
+
+# Start-up time par SQLite database/tables create karne ka rule:
+Base.metadata.create_all(bind=engine)
+
 load_dotenv()
 
 class AIEditRequest(BaseModel):
@@ -32,7 +39,11 @@ async def socketpoint(websocket: WebSocket, document_id: str):
                 
             if tag == 0:
                 manager.documents[document_id].apply_update(payload)
+                # 1. Incremental update ko database me write karein
+                await manager.save_update_to_db(document_id, payload)
+                # 2. Broadcast karein
                 await manager.broadcast_bytes(document_id, data, sender=websocket)
+
             elif tag == 1:
                 await manager.broadcast_bytes(document_id, data, sender=websocket)
 
@@ -54,9 +65,13 @@ async def ai_edit(document_id: str, request: AIEditRequest):
     # 3. Smart diff calculate karke changes apply karein
     apply_diff_to_ytext(ytext, old_text, new_text, manager.documents[document_id])
     
-    # 4. Pure state update generate karein aur use broadcast kar dein
-    # sender=None ensures ki ye server-side trigger sabhi clients ko mile
+    # 4. YDoc ki updated state generate karein
     new_update = manager.documents[document_id].get_update()
-    await manager.broadcast_bytes(document_id, b"\x00" + new_update, sender=None)
     
+    # 5. AI edits ko database me update karein
+    await manager.save_update_to_db(document_id, new_update)
+    
+    # 6. Broadcast to everyone
+    await manager.broadcast_bytes(document_id, b"\x00" + new_update, sender=None)
+
     return {"status": "AI edit applied", "new_text": new_text}

@@ -29,9 +29,8 @@ async def generate_llm_edit(current_text: str, prompt: str) -> str:
         "Just the raw updated text. Do not repeat instructions."
     )
     
-    # We use Llama-3.3-70b-versatile or llama3-8b-8192 for high speed
     payload = {
-        "model": "llama3-8b-8192",
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": f"Document content:\n{current_text}\n\nInstruction:\n{prompt}"}
