@@ -14,7 +14,7 @@ class DocumentConnectionManager:
         if document_id not in self.documents:
             self.documents[document_id] = Y.Doc()
         state_update = self.documents[document_id].get_update()
-        await ws.send_bytes(state_update)
+        await ws.send_bytes(b"\x00" + state_update)
         print(f"Client connected to document {document_id}. Active clients: {len(self.active_connections[document_id])}")
 
     async def disconnect(self,document_id:str,ws:WebSocket):
