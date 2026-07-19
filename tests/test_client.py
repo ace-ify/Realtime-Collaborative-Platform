@@ -8,10 +8,13 @@ WS_URL = "ws://localhost:8000/ws/doc_test_python"
 
 async def client_a():
     async with websockets.connect(WS_URL) as ws:
-        print("[Client A] Connected to WebSocket.")
+        print("[Client A] Connected.")
         
-        # 1. Receive initial server state vector
-        initial_state = await ws.recv()
+        # 1. Receive initial sync state (Starts with 0x00)
+        initial_message = await ws.recv()
+        tag = initial_message[0]
+        initial_state = initial_message[1:]
+        
         doc_a = Y.Doc()
         doc_a.apply_update(initial_state)
         
@@ -21,30 +24,43 @@ async def client_a():
         with doc_a.transaction():
             text_a += "Alice "
         
-        # 3. Get binary update of this change and send to server
+        # 3. Send CRDT edit with Tag 0x00 prefix
         update_bytes = doc_a.get_update()
-        print("[Client A] Sending binary update...")
-        await ws.send(update_bytes)
-    
-        # 4. Receive concurrent update from Client B
-        b_update = await ws.recv()
-        doc_a.apply_update(b_update)
+        print("[Client A] Sending binary edit update (Tag 0x00)...")
+        await ws.send(b"\x00" + update_bytes)
         
-        # 5. Print merged output on Client A side
+        # 4. Simultaneously, send Ephemeral Presence data with Tag 0x01 prefix
+        presence_info = json.dumps({"user": "Alice", "cursor": 6, "color": "red"})
+        print("[Client A] Sending ephemeral presence (Tag 0x01)...")
+        await ws.send(b"\x01" + presence_info.encode('utf-8'))
+        
+        # 5. Receive concurrent updates from Client B
+        # (We will look for B's binary edits or presence updates)
+        for _ in range(2):
+            msg = await ws.recv()
+            msg_tag = msg[0]
+            msg_payload = msg[1:]
+            
+            if msg_tag == 0:
+                doc_a.apply_update(msg_payload)
+            elif msg_tag == 1:
+                presence_data = json.loads(msg_payload.decode('utf-8'))
+                print(f"[Client A] Received presence event: {presence_data}")
+        
         print(f"[Client A] Merged State: '{str(text_a)}'")
-
-        
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         return str(text_a)
-
 
 async def client_b():
     """Simulates Client B sending a concurrent edit."""
     async with websockets.connect(WS_URL) as ws:
-        print("[Client B] Connected to WebSocket.")
+        print("[Client B] Connected.")
         
-        # 1. Receive initial server state vector
-        initial_state = await ws.recv()
+        # 1. Receive initial sync state (Starts with 0x00)
+        initial_message = await ws.recv()
+        tag = initial_message[0]
+        initial_state = initial_message[1:]
+        
         doc_b = Y.Doc()
         doc_b.apply_update(initial_state)
         
@@ -54,20 +70,31 @@ async def client_b():
         with doc_b.transaction():
             text_b += "Bob "
             
-        # 3. Get binary update of this change and send to server
+        # 3. Send CRDT edit with Tag 0x00 prefix
         update_bytes = doc_b.get_update()
-        print("[Client B] Sending binary update...")
-        await ws.send(update_bytes)
+        print("[Client B] Sending binary edit update (Tag 0x00)...")
+        await ws.send(b"\x00" + update_bytes)
         
-        # 4. Receive concurrent update from Client A
-        a_update = await ws.recv()
-        doc_b.apply_update(a_update)
+        # 4. Simultaneously, send Ephemeral Presence data with Tag 0x01 prefix
+        presence_info = json.dumps({"user": "Bob", "cursor": 4, "color": "blue"})
+        print("[Client B] Sending ephemeral presence (Tag 0x01)...")
+        await ws.send(b"\x01" + presence_info.encode('utf-8'))
         
-        # 5. Print merged output on Client B side
+        # 5. Receive concurrent updates from Client A
+        for _ in range(2):
+            msg = await ws.recv()
+            msg_tag = msg[0]
+            msg_payload = msg[1:]
+            
+            if msg_tag == 0:
+                doc_b.apply_update(msg_payload)
+            elif msg_tag == 1:
+                presence_data = json.loads(msg_payload.decode('utf-8'))
+                print(f"[Client B] Received presence event: {presence_data}")
+        
         print(f"[Client B] Merged State: '{str(text_b)}'")
-        
-        await asyncio.sleep(2)
-        return str(text_b) # <--- Return final text for verification
+        await asyncio.sleep(1)
+        return str(text_b)
 
 
 async def main():
