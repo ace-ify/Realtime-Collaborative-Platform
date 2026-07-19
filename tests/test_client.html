@@ -8,19 +8,66 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Design Tokens via CSS Variables */
+        :root {
+            --bg-color: radial-gradient(circle at top left, #0b0f19, #05070c);
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(17, 24, 39, 0.45);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --textarea-bg: #090d16;
+            --textarea-text: #e2e8f0;
+            --textarea-border: rgba(51, 65, 85, 0.5);
+            --header-border: #1e293b;
+            --badge-bg: #0f172a;
+            --badge-border: #1e293b;
+            --details-bg: rgba(15, 23, 42, 0.4);
+            --details-border: #1e293b;
+            --log-bg: #020617;
+            --log-border: #0f172a;
+            --terminal-bg: #020617;
+            --terminal-header: #0f172a;
+            --terminal-text: #cbd5e1;
+            --terminal-border: #0f172a;
+        }
+
+        body.light-mode {
+            --bg-color: #f1f5f9;
+            --text-color: #0f172a;
+            --text-muted: #475569;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --textarea-bg: #ffffff;
+            --textarea-text: #1e293b;
+            --textarea-border: #cbd5e1;
+            --header-border: #e2e8f0;
+            --badge-bg: #f8fafc;
+            --badge-border: #e2e8f0;
+            --details-bg: #ffffff;
+            --details-border: #e2e8f0;
+            --log-bg: #f8fafc;
+            --log-border: #e2e8f0;
+            --terminal-bg: #f8fafc;
+            --terminal-header: #e2e8f0;
+            --terminal-text: #0f172a;
+            --terminal-border: #cbd5e1;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at top left, #0b0f19, #05070c);
-            color: #f8fafc;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .code-font {
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
         }
         .glass-card {
-            background: rgba(17, 24, 39, 0.45);
+            background: var(--card-bg);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
         }
         /* Custom scrollbar for dark console look */
         ::-webkit-scrollbar {
@@ -28,15 +75,20 @@
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.3);
+            background: rgba(15, 23, 42, 0.1);
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(148, 163, 184, 0.2);
+            background: rgba(148, 163, 184, 0.3);
             border-radius: 4px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(148, 163, 184, 0.4);
+        
+        textarea, #aiPrompt {
+            background-color: var(--textarea-bg);
+            color: var(--textarea-text);
+            border-color: var(--textarea-border);
+            transition: all 0.3s ease;
         }
+
         /* Color-Coded Sync Glow Animations */
         .glow-alice {
             animation: glowA 0.8s ease-out;
@@ -49,34 +101,42 @@
         }
         @keyframes glowA {
             0% { border-color: #a78bfa; box-shadow: 0 0 14px rgba(167, 139, 250, 0.35); }
-            100% { border-color: rgba(51, 65, 85, 0.5); box-shadow: none; }
+            100% { border-color: var(--textarea-border); box-shadow: none; }
         }
         @keyframes glowB {
             0% { border-color: #22d3ee; box-shadow: 0 0 14px rgba(34, 211, 238, 0.35); }
-            100% { border-color: rgba(51, 65, 85, 0.5); box-shadow: none; }
+            100% { border-color: var(--textarea-border); box-shadow: none; }
         }
         @keyframes glowAI {
             0% { border-color: #10b981; box-shadow: 0 0 14px rgba(16, 185, 129, 0.35); }
-            100% { border-color: rgba(51, 65, 85, 0.5); box-shadow: none; }
+            100% { border-color: var(--textarea-border); box-shadow: none; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col py-10 px-6 max-w-6xl mx-auto">
+<body class="min-h-screen flex flex-col py-10 px-6 max-w-5xl mx-auto">
 
     <!-- Premium Header -->
-    <header class="border-b border-slate-800 pb-5 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end">
+    <header class="border-b pb-5 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end" style="border-color: var(--header-border)">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+            <h1 class="text-xl font-bold tracking-tight flex items-center gap-2.5">
                 <span class="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse"></span>
                 CRDT Collaboration Console
             </h1>
-            <p class="text-xs text-slate-400 mt-1 font-light">Eventual consistency & real-time operation log visualizer</p>
+            <p class="text-xs text-slate-400 mt-1 font-light" style="color: var(--text-muted)">Eventual consistency & real-time operation log visualizer</p>
         </div>
-        <div class="mt-4 md:mt-0 flex gap-2 font-mono text-[10px]">
-            <span class="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-400 rounded">
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-2 font-mono text-[10px]">
+            <!-- Toggle Theme Button -->
+            <button 
+                id="btnTheme" 
+                class="w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-95 border text-xs"
+                style="background-color: var(--badge-bg); border-color: var(--badge-border); color: var(--text-color)"
+                title="Toggle Theme">
+                <span id="themeIcon">☀️</span>
+            </button>
+            <span class="px-2.5 py-1 rounded border" style="background-color: var(--badge-bg); border-color: var(--badge-border); color: var(--text-muted)">
                 Yjs / pycrdt
             </span>
-            <span class="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-400 rounded">
+            <span class="px-2.5 py-1 rounded border" style="background-color: var(--badge-bg); border-color: var(--badge-border); color: var(--text-muted)">
                 FastAPI WebSockets
             </span>
         </div>
@@ -90,18 +150,18 @@
             <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center space-x-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span class="text-xs font-semibold tracking-wide text-violet-300">Client A: Alice</span>
+                    <span class="text-xs font-semibold tracking-wide text-violet-500 dark:text-violet-300">Client A: Alice</span>
                 </div>
                 <span class="text-[10px] text-slate-500 font-mono" id="presenceA">Cursor: 0</span>
             </div>
             
             <textarea 
                 id="editorA" 
-                class="w-full h-64 bg-slate-950/80 text-slate-200 border border-slate-800/80 rounded-lg p-4 focus:outline-none resize-none code-font text-sm shadow-inner transition-all duration-300"
+                class="w-full h-64 border rounded-lg p-4 focus:outline-none resize-none code-font text-sm shadow-inner transition-all duration-300"
                 placeholder="Start typing as Alice..."></textarea>
             
             <!-- Presence Status -->
-            <div class="mt-3 text-[11px] text-slate-500 font-mono flex items-center space-x-1.5" id="bobStatus">
+            <div class="mt-3 text-[11px] font-mono flex items-center space-x-1.5" style="color: var(--text-muted)" id="bobStatus">
                 <span>Bob is offline</span>
             </div>
         </div>
@@ -111,18 +171,18 @@
             <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center space-x-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span class="text-xs font-semibold tracking-wide text-cyan-300">Client B: Bob</span>
+                    <span class="text-xs font-semibold tracking-wide text-cyan-600 dark:text-cyan-300">Client B: Bob</span>
                 </div>
                 <span class="text-[10px] text-slate-500 font-mono" id="presenceB">Cursor: 0</span>
             </div>
             
             <textarea 
                 id="editorB" 
-                class="w-full h-64 bg-slate-950/80 text-slate-200 border border-slate-800/80 rounded-lg p-4 focus:outline-none resize-none code-font text-sm shadow-inner transition-all duration-300"
+                class="w-full h-64 border rounded-lg p-4 focus:outline-none resize-none code-font text-sm shadow-inner transition-all duration-300"
                 placeholder="Start typing as Bob..."></textarea>
             
             <!-- Presence Status -->
-            <div class="mt-3 text-[11px] text-slate-500 font-mono flex items-center space-x-1.5" id="aliceStatus">
+            <div class="mt-3 text-[11px] font-mono flex items-center space-x-1.5" style="color: var(--text-muted)" id="aliceStatus">
                 <span>Alice is offline</span>
             </div>
         </div>
@@ -135,14 +195,14 @@
         <!-- Left: AI Trigger Panel -->
         <div class="glass-card rounded-xl p-5 flex flex-col justify-between col-span-1">
             <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">AI Co-Editor REST Trigger</h3>
-                <p class="text-[10px] text-slate-500 leading-normal mb-4 font-light">Proposes an edit asynchronously that calculates a transactional character diff directly against the server YDoc state.</p>
+                <h3 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: var(--text-muted)">AI Co-Editor REST Trigger</h3>
+                <p class="text-[10px] leading-normal mb-4 font-light" style="color: var(--text-muted)">Proposes an edit asynchronously that calculates a transactional character diff directly against the server YDoc state.</p>
             </div>
             <div class="space-y-3">
                 <input 
                     type="text" 
                     id="aiPrompt" 
-                    class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-slate-700 font-sans"
+                    class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-slate-450 font-sans shadow-sm"
                     placeholder="e.g. Translate to Spanish..."
                     value="Change the word cold to warm">
                 <button 
@@ -156,7 +216,7 @@
         <!-- Right: Animated Conflict Debug Terminal -->
         <div class="glass-card rounded-xl p-5 col-span-1 lg:col-span-2 flex flex-col">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">CRDT Conflict Engine Simulator</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted)">CRDT Conflict Engine Simulator</h3>
                 <button 
                     id="btnConflict"
                     class="py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium transition-all active:scale-95">
@@ -165,20 +225,20 @@
             </div>
 
             <!-- macOS-Style Debug Terminal Window -->
-            <div class="w-full bg-slate-950 rounded-lg border border-slate-800 overflow-hidden flex flex-col flex-grow">
+            <div class="w-full rounded-lg border overflow-hidden flex flex-col flex-grow" style="background-color: var(--terminal-bg); border-color: var(--terminal-border)">
                 <!-- Terminal Header -->
-                <div class="bg-slate-900 px-4 py-2 border-b border-slate-900 flex justify-between items-center">
+                <div class="px-4 py-2 border-b flex justify-between items-center" style="background-color: var(--terminal-header); border-color: var(--terminal-border)">
                     <div class="flex space-x-1.5">
                         <span class="w-2.5 h-2.5 rounded-full bg-rose-500/90 inline-block"></span>
                         <span class="w-2.5 h-2.5 rounded-full bg-amber-500/90 inline-block"></span>
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/90 inline-block"></span>
                     </div>
-                    <span class="text-[9px] font-mono text-slate-500">crdt-conflict-debugger</span>
+                    <span class="text-[9px] font-mono" style="color: var(--text-muted)">crdt-conflict-debugger</span>
                     <span class="w-8"></span>
                 </div>
                 <!-- Terminal Body -->
-                <div id="terminalBody" class="p-4 h-40 overflow-y-auto font-mono text-[10px] space-y-1.5 text-slate-400">
-                    <div class="text-slate-600 italic">Debugger idle. Click "Simulate Concurrent Conflict" to run the pipeline...</div>
+                <div id="terminalBody" class="p-4 h-40 overflow-y-auto font-mono text-[10px] space-y-1.5" style="color: var(--terminal-text)">
+                    <div class="italic" style="color: var(--text-muted)">Debugger idle. Click "Simulate Concurrent Conflict" to run the pipeline...</div>
                 </div>
             </div>
         </div>
@@ -186,22 +246,22 @@
     </div>
 
     <!-- Collapsible IDE Mutation Log -->
-    <details class="border border-slate-800 rounded-xl bg-slate-950/40 p-4">
-        <summary class="text-xs font-semibold text-slate-400 cursor-pointer uppercase tracking-wider select-none outline-none hover:text-white transition-all">
+    <details class="border rounded-xl p-4" style="background-color: var(--details-bg); border-color: var(--details-border)">
+        <summary class="text-xs font-semibold cursor-pointer uppercase tracking-wider select-none outline-none hover:text-slate-500 transition-all">
             CRDT Operation Log (Real-time Delta Streams)
         </summary>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-3 border-t border-slate-900">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-3 border-t" style="border-color: var(--details-border)">
             <div>
-                <h4 class="text-[11px] font-semibold text-violet-400 mb-2 flex items-center gap-1.5">
+                <h4 class="text-[11px] font-semibold text-violet-500 mb-2 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Client A (Alice) Log
                 </h4>
-                <div id="logA" class="h-44 overflow-y-auto bg-slate-950 border border-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[9px] space-y-1.5"></div>
+                <div id="logA" class="h-44 overflow-y-auto border p-3 rounded-lg font-mono text-[9px] space-y-1.5" style="background-color: var(--log-bg); border-color: var(--log-border)"></div>
             </div>
             <div>
-                <h4 class="text-[11px] font-semibold text-cyan-400 mb-2 flex items-center gap-1.5">
+                <h4 class="text-[11px] font-semibold text-cyan-600 mb-2 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> Client B (Bob) Log
                 </h4>
-                <div id="logB" class="h-44 overflow-y-auto bg-slate-950 border border-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[9px] space-y-1.5"></div>
+                <div id="logB" class="h-44 overflow-y-auto border p-3 rounded-lg font-mono text-[9px] space-y-1.5" style="background-color: var(--log-bg); border-color: var(--log-border)"></div>
             </div>
         </div>
     </details>
@@ -226,6 +286,8 @@
         const elEditorB = document.getElementById("editorB");
         const elBtnAI = document.getElementById("btnAI");
         const elBtnConflict = document.getElementById("btnConflict");
+        const elBtnTheme = document.getElementById("btnTheme");
+        const elThemeIcon = document.getElementById("themeIcon");
         const elPrompt = document.getElementById("aiPrompt");
         const elTerminal = document.getElementById("terminalBody");
 
@@ -243,6 +305,15 @@
 
         // Helper delay utility
         const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // -------------------------------------------------------------
+        // Theme Toggle Event
+        // -------------------------------------------------------------
+        elBtnTheme.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            elThemeIcon.innerText = isLight ? "🌙" : "☀️";
+        });
 
         // -------------------------------------------------------------
         // Setup WebSocket Connections
@@ -324,16 +395,17 @@
             const deltaStr = JSON.stringify(delta);
             
             let badgeStyle = "border-slate-800 text-slate-400 bg-slate-900";
-            if (origin === "Local") badgeStyle = "border-blue-800/40 text-blue-400 bg-blue-950/30";
-            else if (origin === "Remote Client") badgeStyle = "border-violet-800/40 text-violet-400 bg-violet-950/30";
-            else if (origin === "AI Agent") badgeStyle = "border-emerald-800/40 text-emerald-400 bg-emerald-950/30";
+            if (origin === "Local") badgeStyle = "border-blue-800/40 text-blue-500 bg-blue-950/30";
+            else if (origin === "Remote Client") badgeStyle = "border-violet-800/40 text-violet-500 bg-violet-950/30";
+            else if (origin === "AI Agent") badgeStyle = "border-emerald-800/40 text-emerald-500 bg-emerald-950/30";
             
             const logLine = document.createElement("div");
-            logLine.className = "flex items-start space-x-2 py-0.5 border-b border-slate-900";
+            logLine.className = "flex items-start space-x-2 py-0.5 border-b" + 
+                (document.body.classList.contains('light-mode') ? " border-slate-100" : " border-slate-900");
             logLine.innerHTML = `
-                <span class="text-slate-600 font-mono text-[9px]">${timestamp}</span>
+                <span class="text-slate-500 font-mono text-[9px]">${timestamp}</span>
                 <span class="text-[8px] px-1.5 py-0.2 rounded border font-medium ${badgeStyle}">${origin}</span>
-                <span class="text-slate-400 font-mono select-all">${deltaStr}</span>
+                <span class="text-slate-500 font-mono select-all">${deltaStr}</span>
             `;
             logDiv.appendChild(logLine);
             logDiv.scrollTop = logDiv.scrollHeight;
@@ -346,13 +418,13 @@
             const line = document.createElement("div");
             line.className = "py-0.5 leading-relaxed";
             
-            let prefix = `<span class="text-slate-500">[$]</span>`;
-            if (type === "op") prefix = `<span class="text-indigo-400">[OP]</span>`;
-            else if (type === "net") prefix = `<span class="text-cyan-400">[NET]</span>`;
-            else if (type === "sync") prefix = `<span class="text-emerald-400">[SYNC]</span>`;
-            else if (type === "err") prefix = `<span class="text-rose-500">[ERR]</span>`;
+            let prefix = `<span style="color: var(--text-muted)">[$]</span>`;
+            if (type === "op") prefix = `<span class="font-medium" style="color: #6366f1">[OP]</span>`;
+            else if (type === "net") prefix = `<span class="font-medium" style="color: #06b6d4">[NET]</span>`;
+            else if (type === "sync") prefix = `<span class="font-medium" style="color: #10b981">[SYNC]</span>`;
+            else if (type === "err") prefix = `<span class="font-medium" style="color: #ef4444">[ERR]</span>`;
             
-            line.innerHTML = `${prefix} <span class="text-slate-300">${message}</span>`;
+            line.innerHTML = `${prefix} <span style="color: var(--terminal-text)">${message}</span>`;
             elTerminal.appendChild(line);
             elTerminal.scrollTop = elTerminal.scrollHeight;
         };
