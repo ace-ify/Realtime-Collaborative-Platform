@@ -9,9 +9,7 @@ def apply_diff_to_ytext(ytext: Y.Text, old_text: str, new_text: str, doc: Y.Doc)
     dmp = diff_match_patch()
     diffs = dmp.diff_main(old_text, new_text)
     # diff_cleanupSemantic cleans up the diff to make it more human-readable
-    dmp.diff_cleanupSemantic(diffs)
-    print(diffs)
-    
+    dmp.diff_cleanupSemantic(diffs)    
     idx = 0  # Tracks the current cursor position in Y.Text
     
     # Hum saare updates ko single transaction me wrap karenge
