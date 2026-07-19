@@ -1,12 +1,15 @@
 # Real-Time Collaborative Engine & AI Co-Editor
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
+
 A high-performance real-time collaborative document backend where multiple users (and an autonomous AI agent) edit the same document concurrently, utilizing Conflict-Free Replicated Data Types (CRDTs) to guarantee eventual consistency.
 
-![Real-Time Collaborative Dashboard](docs/demo.png)
+![Real-Time Collaborative Dashboard](docs/demo.gif)
 
 ---
 
-## ⚡ The Tech Stack
+## The Tech Stack
 * **Web Gateway & Router:** FastAPI (Python)
 * **Real-time Pipeline:** Async WebSockets
 * **Conflict Resolution (CRDT):** `pycrdt` (Python bindings for the Rust-backed Yjs implementation)
@@ -16,7 +19,7 @@ A high-performance real-time collaborative document backend where multiple users
 
 ---
 
-## 🏗️ Architecture Design
+## Architecture Design
 
 ```mermaid
 graph TD
@@ -47,7 +50,7 @@ graph TD
 
 ---
 
-## 💡 Why This Is Hard (Engineering Challenges)
+## Why This Is Hard (Engineering Challenges)
 
 1. **AI as a First-Class Citizen:** Most collaborative tools run AI in a separate sidebar and overwrite user states upon completion. This destroys concurrent user cursors and active selections. We resolved this by calculating minimal character insertions/deletions via `diff-match-patch` and executing them inside a single `pycrdt` transaction, keeping users' cursors intact.
 2. **Byte-Framing on a Single Port:** To avoid socket overhead, we built a custom protocol layer. Prepended tags (`0x00` for CRDT edits, `0x01` for presence) isolate state updates from ephemeral cursor movements, preventing database write pollution.
@@ -56,7 +59,11 @@ graph TD
 
 ---
 
-## 📊 Performance Metrics (Local Benchmarks)
+## Performance Metrics (Local Benchmarks)
+
+> [!NOTE]
+> Measured on localhost with 2 simulated concurrent WebSocket clients and 1 concurrent AI client (see `tests/test_client.py` and `tests/test_persistence.py`). Not representative of cross-network latency.
+
 * **Local state propagation:** **< 5ms** (Client-to-Client websocket relay).
 * **Document Reconstruction Speed:** **< 3ms** (Loading latest snapshot + replaying post-snapshot operations).
 * **AI Edit Convergence Time:** **~300ms** (Diff calculation + transactional YDoc application after receiving Groq completion).
@@ -64,36 +71,43 @@ graph TD
 
 ---
 
-## 📝 Architectural Decision Records (ADRs)
+## Architectural Decision Records (ADRs)
 For detailed explanations of our technical choices and the trade-offs involved, see the ADRs document:
 👉 **[Read the Architectural Decision Records (docs/decisions.md)](docs/decisions.md)**
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
 ### 1. Setup Environment
 Clone the repository and create a Python virtual environment:
 ```bash
 python -m venv venv
-venv\Scripts\activate
+
+# Activate the virtual environment
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
+
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the root:
+### 2. Configure Environment Keys (Optional)
+To test live AI editing, create a `.env` file in the root directory:
 ```env
 GROQ_API_KEY=your_actual_groq_api_key
 ```
+> [!TIP]
+> You can acquire a free API key at [groq.com](https://groq.com/). If run without a key, the core application (real-time CRDT sync, presence tracking, debugger conflict simulator, and operation logs) works fully out-of-the-box, with the AI Co-Editor falling back to a deterministic Mock editor.
 
-### 2. Start the Collaborative Server
+### 3. Start the Collaborative Server
 ```bash
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Open the Demo Dashboard
-Double-click `tests/test_client.html` to open it in a browser, or serve it locally. This single-page test harness emulates two users (Alice and Bob) side-by-side using vanilla WebSockets and Yjs. You can type in either editor and click "Trigger AI Co-Editor" to watch the real-time CRDT convergence.
+### 4. Open the Demo Dashboard
+Double-click `demo/index.html` to open it in a browser, or serve it locally. This single-page test harness emulates two users (Alice and Bob) side-by-side using vanilla WebSockets and Yjs. You can type in either editor and click "Trigger AI Edit" to watch the real-time CRDT convergence.
 
-### 4. Run Automated Tests
+### 5. Run Automated Tests
 * **CRDT Convergence Test:** `python tests/test_client.py`
 * **Smart Diff Unit Test:** `python tests/test_diff.py`
 * **AI Integration Test:** `python tests/test_ai_editor.py`
