@@ -3,6 +3,7 @@ from app.connection_manager import manager
 import pycrdt as Y
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.diff_utils import apply_diff_to_ytext
 from app.ai_editor import generate_llm_edit
@@ -20,7 +21,17 @@ class AIEditRequest(BaseModel):
     prompt: str
 
 
-app=FastAPI(title="Realtime Collaborative Platform")
+app = FastAPI(title="Realtime Collaborative Platform")
+
+# CORS preflight aur requests ko allow karne ka rule
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Local files aur cross-origin dev ports ko allow karein
+    allow_credentials=True,
+    allow_methods=["*"],  # OPTIONS, POST, GET, aur sabhi methods allow karein
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
 def health():
