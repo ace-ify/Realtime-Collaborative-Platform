@@ -17,6 +17,11 @@ We chose **Conflict-Free Replicated Data Types (CRDTs)**, implemented via the Ru
 * **Performance:** `pycrdt` is built on top of `yrs` (the Rust port of Yjs), which offers extremely fast serialization, delta compression, and sub-millisecond document sync times.
 * **Offline Capability:** CRDT updates can be applied out-of-order and will still converge. This allows clients to reconnect, apply queued updates, and merge states without complex rewrite logic.
 
+### Scaling & Failure Modes
+* **Memory Overhead (Tombstones):** Because CRDTs retain a history of mutations and tombstones for deleted characters to resolve potential sync conflicts, the in-memory size of a long-lived document grows monotonically. For documents with hundreds of thousands of edits, memory usage on both client and server will scale linearly, leading to performance degradation.
+* **Initial Connection Synchronization:** When a client first connects, it must fetch the entire document state. A massive edit history translates to large binary updates, increasing the initial download payload and time-to-interactive for slow networks.
+* **CPU-Bound Merges:** Parsing and merging large state updates on low-powered client devices (like mobile browsers) can temporarily freeze the main thread.
+
 ---
 
 ## ADR 2: AI as a First-Class Concurrent Editor
@@ -35,6 +40,11 @@ We decided to treat the AI agent as a **first-class actor** in the CRDT event st
       # diff-match-patch minimal modifications
   ```
   This integrates the AI edits seamlessly into Yjs, preserving active concurrent cursors nearby.
+
+### Scaling & Failure Modes
+* **Diffing Performance Bottleneck:** Diff-Match-Patch operates with $O(ND)$ time complexity where $N$ is document length and $D$ is edit distance. For large files, executing this on every AI turn is highly CPU-bound and will block the server's event loop, impacting other connected clients.
+* **Syntactic Edit Collisions:** Concurrently editing the same paragraph as a human user can cause Diff-Match-Patch to resolve the merge in semantically or syntactically broken ways, interleaving character changes awkwardly.
+* **API Rate Limits and Token Inflation:** Constant real-time triggers for AI completions over long documents will spike token consumption and hit LLM provider rate limits quickly.
 
 ---
 
@@ -55,6 +65,11 @@ document_snapshots (Snaps)  ──►  Write full YDoc state on every 5th edit (
 * **Performance & Revision History:** We store every incremental binary update in `document_updates` to retain a full transaction audit trail.
 * **Optimized Load Times:** Loading a document doesn't require playing back millions of updates from the beginning of time. Instead, the server loads the *latest snapshot* and plays back only the few updates created *after* that snapshot's timestamp.
 
+### Scaling & Failure Modes
+* **I/O Spikes during Snapshotting:** Saving the full YDoc state every 5th edit causes database write spikes. Under high concurrency across many documents, concurrent snapshot operations can saturate database connection pools.
+* **Op Log Bloat & Startup Latency:** If snapshot writing fails or if the threshold is too high, the incremental log (`document_updates`) accumulates thousands of operations. Upon document load, replaying a bloated log on top of the base snapshot introduces significant latency.
+* **State Drift/Split-Brain:** If the in-memory state is mutated but database serialization (snapshots or logs) fails due to transient connection errors, the persisted document diverges from active client states, resulting in potential data loss on server restarts.
+
 ---
 
 ## ADR 4: Custom Byte-Framing Protocol
@@ -70,3 +85,8 @@ We designed a lightweight **Byte-Framing Protocol** where every WebSocket messag
 ### Rationale & Trade-offs
 * **No Database Pollution:** Presence data changes on every cursor movement. Relaying it directly (bypassing the DB) prevents writing thousands of useless cursor coordinates to disk.
 * **Unified Pipeline:** Using one WebSocket port instead of multiple sockets or polling endpoints simplifies connection management and reduces client-side connection overhead.
+
+### Scaling & Failure Modes
+* **Head-of-Line Blocking:** Ephemera (presence packets like cursor movements) and sync updates share the same WebSocket channel. A burst of cursor updates from multiple users can clog the TCP send buffer, delaying critical CRDT sync messages.
+* **Broadcast Storms:** Ephemeral cursor updates are broadcasted to all connected clients, scaling at $O(N^2)$ message volume where $N$ is the number of active users. A highly populated document will rapidly saturate network bandwidth and server CPU.
+* **Client Buffer Saturation:** Slow clients might fail to process high-frequency cursor coordinates, causing browser memory usage to balloon and connection dropouts.
